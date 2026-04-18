@@ -192,13 +192,13 @@ bool gps_manager_is_peer_gps_preferred(void) {
 }
 
 void gps_manager_clear_peer_fix(void) {
-    portENTER_CRITICAL(&gps_state_lock);
+    taskENTER_CRITICAL(&gps_state_lock);
     gps_peer_last_update_tick = 0;
     gps_peer_has_seen_update = false;
     memset(&gps_peer_fix_snapshot, 0, sizeof(gps_peer_fix_snapshot));
     gps_peer_fix_snapshot.fix = GPS_FIX_INVALID;
     gps_peer_fix_snapshot.fix_mode = GPS_MODE_INVALID;
-    portEXIT_CRITICAL(&gps_state_lock);
+    taskEXIT_CRITICAL(&gps_state_lock);
 }
 
 void gps_manager_update_local_snapshot(const gps_t *fix) {
@@ -206,9 +206,9 @@ void gps_manager_update_local_snapshot(const gps_t *fix) {
         return;
     }
 
-    portENTER_CRITICAL(&gps_state_lock);
+    taskENTER_CRITICAL(&gps_state_lock);
     gps_local_snapshot = *fix;
-    portEXIT_CRITICAL(&gps_state_lock);
+    taskEXIT_CRITICAL(&gps_state_lock);
 }
 
 void gps_manager_update_peer_fix(const gps_peer_fix_t *fix) {
@@ -216,7 +216,7 @@ void gps_manager_update_peer_fix(const gps_peer_fix_t *fix) {
         return;
     }
 
-    portENTER_CRITICAL(&gps_state_lock);
+    taskENTER_CRITICAL(&gps_state_lock);
     gps_peer_fix_snapshot.latitude = fix->latitude;
     gps_peer_fix_snapshot.longitude = fix->longitude;
     gps_peer_fix_snapshot.altitude = fix->altitude;
@@ -242,7 +242,7 @@ void gps_manager_update_peer_fix(const gps_peer_fix_t *fix) {
 
     gps_peer_last_update_tick = xTaskGetTickCount();
     gps_peer_has_seen_update = true;
-    portEXIT_CRITICAL(&gps_state_lock);
+    taskEXIT_CRITICAL(&gps_state_lock);
 }
 
 bool gps_manager_get_local_gps_snapshot(gps_t *out_gps) {
@@ -254,9 +254,9 @@ bool gps_manager_get_local_gps_snapshot(gps_t *out_gps) {
         return false;
     }
 
-    portENTER_CRITICAL(&gps_state_lock);
+    taskENTER_CRITICAL(&gps_state_lock);
     *out_gps = gps_local_snapshot;
-    portEXIT_CRITICAL(&gps_state_lock);
+    taskEXIT_CRITICAL(&gps_state_lock);
     return true;
 }
 
@@ -266,20 +266,20 @@ bool gps_manager_get_active_gps_snapshot(gps_t *out_gps, bool *using_peer) {
     }
 
     if (gps_peer_preferred) {
-        portENTER_CRITICAL(&gps_state_lock);
+        taskENTER_CRITICAL(&gps_state_lock);
         TickType_t last_tick = gps_peer_last_update_tick;
         if (last_tick != 0) {
             TickType_t now = xTaskGetTickCount();
             if ((now - last_tick) <= pdMS_TO_TICKS(GPS_STALE_UPDATE_TIMEOUT_MS)) {
                 *out_gps = gps_peer_fix_snapshot;
-                portEXIT_CRITICAL(&gps_state_lock);
+                taskEXIT_CRITICAL(&gps_state_lock);
                 if (using_peer) {
                     *using_peer = true;
                 }
                 return true;
             }
         }
-        portEXIT_CRITICAL(&gps_state_lock);
+        taskEXIT_CRITICAL(&gps_state_lock);
         if (using_peer) {
             *using_peer = true;
         }
@@ -382,12 +382,12 @@ void gps_manager_init(GPSManager *manager) {
     gps_has_seen_update = false;
     gps_peer_last_update_tick = 0;
     gps_peer_has_seen_update = false;
-    portENTER_CRITICAL(&gps_state_lock);
+    taskENTER_CRITICAL(&gps_state_lock);
     memset(&gps_local_snapshot, 0, sizeof(gps_local_snapshot));
     memset(&gps_peer_fix_snapshot, 0, sizeof(gps_peer_fix_snapshot));
     gps_peer_fix_snapshot.fix = GPS_FIX_INVALID;
     gps_peer_fix_snapshot.fix_mode = GPS_MODE_INVALID;
-    portEXIT_CRITICAL(&gps_state_lock);
+    taskEXIT_CRITICAL(&gps_state_lock);
     gps_soft_rx_pin = GPIO_NUM_NC;
     gps_soft_baud_rate = 0;
 
@@ -835,12 +835,12 @@ void gps_manager_deinit(GPSManager *manager) {
         gps_has_seen_update = false;
         gps_peer_last_update_tick = 0;
         gps_peer_has_seen_update = false;
-        portENTER_CRITICAL(&gps_state_lock);
+        taskENTER_CRITICAL(&gps_state_lock);
         memset(&gps_local_snapshot, 0, sizeof(gps_local_snapshot));
         memset(&gps_peer_fix_snapshot, 0, sizeof(gps_peer_fix_snapshot));
         gps_peer_fix_snapshot.fix = GPS_FIX_INVALID;
         gps_peer_fix_snapshot.fix_mode = GPS_MODE_INVALID;
-        portEXIT_CRITICAL(&gps_state_lock);
+        taskEXIT_CRITICAL(&gps_state_lock);
         gps_soft_rx_pin = GPIO_NUM_NC;
         gps_soft_baud_rate = 0;
         status_display_show_status("GPS Deinit");
