@@ -26,7 +26,8 @@ typedef enum {
     BLE_SPAM_SAMSUNG,       ///< Samsung watch spam
     BLE_SPAM_GOOGLE,        ///< Google Fast Pair spam
     BLE_SPAM_FLIPPERZERO,   ///< Flipper Zero spam
-    BLE_SPAM_RANDOM         ///< Random mix of all spam types
+    BLE_SPAM_RANDOM,        ///< Random mix of all spam types
+    BLE_SPAM_AUDIO_DOS
 } ble_spam_type_t;
 
 /**
