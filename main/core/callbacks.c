@@ -957,7 +957,7 @@ static int pcap_pool_acquire_slot(void) {
     }
 
     int slot = -1;
-    taskENTER_CRITICAL(&s_pcap_pool_lock);
+    portENTER_CRITICAL(&s_pcap_pool_lock);
     for (size_t i = 0; i < s_pcap_pool_slots; i++) {
         if (!s_pcap_pool[i].in_use) {
             s_pcap_pool[i].in_use = true;
@@ -965,7 +965,7 @@ static int pcap_pool_acquire_slot(void) {
             break;
         }
     }
-    taskEXIT_CRITICAL(&s_pcap_pool_lock);
+    portEXIT_CRITICAL(&s_pcap_pool_lock);
     return slot;
 }
 
@@ -974,10 +974,10 @@ static void pcap_pool_release_slot(uint8_t slot_idx) {
         return;
     }
 
-    taskENTER_CRITICAL(&s_pcap_pool_lock);
+    portENTER_CRITICAL(&s_pcap_pool_lock);
     s_pcap_pool[slot_idx].in_use = false;
     s_pcap_pool[slot_idx].length = 0;
-    taskEXIT_CRITICAL(&s_pcap_pool_lock);
+    portEXIT_CRITICAL(&s_pcap_pool_lock);
 }
 
 static void pcap_writer_task(void *arg) {
@@ -1079,11 +1079,11 @@ void cleanup_pcap_queue(void) {
 
     if (s_pcap_pool != NULL) {
         pcap_pool_slot_t *pool_to_free = NULL;
-        taskENTER_CRITICAL(&s_pcap_pool_lock);
+        portENTER_CRITICAL(&s_pcap_pool_lock);
         pool_to_free = s_pcap_pool;
         s_pcap_pool = NULL;
         s_pcap_pool_slots = 0;
-        taskEXIT_CRITICAL(&s_pcap_pool_lock);
+        portEXIT_CRITICAL(&s_pcap_pool_lock);
         heap_caps_free(pool_to_free);
     }
 }
