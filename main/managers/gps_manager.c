@@ -382,12 +382,12 @@ void gps_manager_init(GPSManager *manager) {
     gps_has_seen_update = false;
     gps_peer_last_update_tick = 0;
     gps_peer_has_seen_update = false;
-    taskENTER_CRITICAL(&gps_state_lock);
+    portENTER_CRITICAL(&gps_state_lock);
     memset(&gps_local_snapshot, 0, sizeof(gps_local_snapshot));
     memset(&gps_peer_fix_snapshot, 0, sizeof(gps_peer_fix_snapshot));
     gps_peer_fix_snapshot.fix = GPS_FIX_INVALID;
     gps_peer_fix_snapshot.fix_mode = GPS_MODE_INVALID;
-    taskEXIT_CRITICAL(&gps_state_lock);
+    portEXIT_CRITICAL(&gps_state_lock);
     gps_soft_rx_pin = GPIO_NUM_NC;
     gps_soft_baud_rate = 0;
 
