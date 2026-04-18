@@ -6673,6 +6673,28 @@
       "source_commit": "510f89dfb780ba8e9ee84962baef1064481c5f99",
       "updated_at": "2026-04-13T04:34:53.680938+00:00"
     },
+    "5fa8b301e1cd1607ff103afaaac10bb6ebe6ff41": {
+      "configs": [
+        {
+          "channel": "stable",
+          "config": "esp32s3-punyaku",
+          "download_url": "https://github.com/Andyy55/ghst/releases/download/newcfg/esp32s3-punyaku.zip",
+          "release_tag": "newcfg",
+          "zip_name": "esp32s3-punyaku.zip"
+        }
+      ],
+      "last_channel": "stable",
+      "last_tag": "newcfg",
+      "release_refs": [
+        {
+          "channel": "stable",
+          "tag": "newcfg",
+          "updated_at": "2026-04-18T03:51:29.923560+00:00"
+        }
+      ],
+      "source_commit": "5fa8b301e1cd1607ff103afaaac10bb6ebe6ff41",
+      "updated_at": "2026-04-18T03:51:29.923560+00:00"
+    },
     "5ff0f41471004a4b53eee19f6e392544bad6b7bf": {
       "configs": [
         {
@@ -21443,5 +21465,5 @@
   "generated_by": "compile_all.yml",
   "repository": "Andyy55/ghst",
   "schema_version": 2,
-  "updated_at": "2026-04-18T03:44:31.382998+00:00"
+  "updated_at": "2026-04-18T03:51:29.923560+00:00"
 }
