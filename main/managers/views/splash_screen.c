@@ -38,7 +38,7 @@ void splash_create(void) {
 
 
   lv_obj_t *label1 = lv_label_create(splash_screen);
-  lv_label_set_text(label1, "GhostESP: Revival");
+  lv_label_set_text(label1, "GhostESP | Andyy");
   lv_obj_set_style_text_color(label1, lv_color_hex(0xFFFFFF), 0);
   lv_obj_align_to(label1, img, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);
   
