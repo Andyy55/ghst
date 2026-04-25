@@ -35,6 +35,7 @@
 #include "managers/wifi_manager.h"
 #include "managers/rgb_manager.h"
 #include "driver/i2c_master.h"
+#include "driver/i2c.h"
 #include "soc/soc_caps.h"
 #include "io_manager/i2c_bus_lock.h"
 #ifdef CONFIG_USE_IO_EXPANDER
