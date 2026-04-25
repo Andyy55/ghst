@@ -92,7 +92,7 @@ jobs:
         run: |
           python3 -c "import os,pathlib; p=pathlib.Path(os.path.expanduser('~/esp-idf'))/'components/esp_gdbstub/src/gdbstub.c'; s=p.read_text(encoding='utf-8'); s=s.replace('#if (CONFIG_ESP_SYSTEM_GDBSTUB_RUNTIME || CONFIG_ESP_GDBSTUB_SUPPORT_TASKS)', '#if 1'); p.write_text(s, encoding='utf-8')"
 
-     - name: Apply Custom SDK Config
+      - name: Apply Custom SDK Config
         run: |
           rm -f sdkconfig sdkconfig.defaults
           cp "${{ matrix.target.sdkconfig_file }}" sdkconfig.defaults
