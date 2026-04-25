@@ -35,7 +35,6 @@
 #include "managers/wifi_manager.h"
 #include "managers/rgb_manager.h"
 #include "driver/i2c_master.h"
-#include "driver/i2c.h"
 #include "soc/soc_caps.h"
 #include "io_manager/i2c_bus_lock.h"
 #ifdef CONFIG_USE_IO_EXPANDER
@@ -1150,18 +1149,26 @@ void apply_power_management_config(bool power_save_enabled) {
 }
 
 void display_manager_init(void) {
-  i2c_config_t conf = {
-      .mode = I2C_MODE_MASTER,
-      .sda_io_num = 8,   // Pin SDA lu
+  // PAKSA INIT PAKE DRIVER BARU (driver_ng)
+  i2c_master_bus_handle_t bus_handle;
+  i2c_master_bus_config_t bus_config = {
+      .clk_source = I2C_CLK_SRC_DEFAULT,
+      .i2c_port = I2C_NUM_0,
       .scl_io_num = 9,   // Pin SCL lu
-      .sda_pullup_en = GPIO_PULLUP_ENABLE,
-      .scl_pullup_en = GPIO_PULLUP_ENABLE,
-      .master.clk_speed = 400000, // Fast Mode
+      .sda_io_num = 8,   // Pin SDA lu
+      .glitch_ignore_cnt = 7,
+      .flags.enable_internal_pullup = true,
   };
-  i2c_param_config(I2C_NUM_0, &conf);
-  i2c_driver_install(I2C_NUM_0, conf.mode, 0, 0, 0);
+  
+  // Inisialisasi bus, kalau udah ada dia bakal skip (biar gak conflict)
+  esp_err_t err = i2c_new_master_bus(&bus_config, &bus_handle);
+  if (err == ESP_OK) {
+      ESP_LOGI(TAG, "I2C Master Bus initialized on Pin 8 & 9");
+  } else {
+      ESP_LOGW(TAG, "I2C Bus already exists or failed: %s", esp_err_to_name(err));
+  }
 
-  ESP_LOGI(TAG, "I2C Manual Init Done on Pin 8 & 9");
+
   ESP_LOGI(TAG, "display_manager_init: starting, free internal RAM: %d bytes", 
            (int)heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
 
