@@ -15330,6 +15330,31 @@
       "source_commit": "b40401dec0f8f7a5fc80229b70dead9de5c080c9",
       "updated_at": "2026-04-14T17:17:34.187910+00:00"
     },
+    "b4727a5c5beed9bb71cc1206e5d304921a201a45": {
+      "configs": [
+        {
+          "artifact_run_url": "https://github.com/Andyy55/ghst/actions/runs/24921659507",
+          "channel": "commit",
+          "config": "artifact-esp32s3-punyaku",
+          "download_url": null,
+          "release_tag": null,
+          "zip_name": "artifact-esp32s3-punyaku.zip"
+        },
+        {
+          "artifact_run_url": "https://github.com/Andyy55/ghst/actions/runs/24921659507",
+          "channel": "commit",
+          "config": "esp32s3-punyaku",
+          "download_url": "https://github.com/Andyy55/ghst/actions/runs/24921659507/artifacts/6637131778",
+          "release_tag": null,
+          "zip_name": "esp32s3-punyaku.zip"
+        }
+      ],
+      "last_channel": "commit",
+      "last_tag": null,
+      "release_refs": [],
+      "source_commit": "b4727a5c5beed9bb71cc1206e5d304921a201a45",
+      "updated_at": "2026-04-25T03:39:11.286648+00:00"
+    },
     "c1ee860fb0339289a1bb4c957d5261de861d694c": {
       "configs": [
         {
@@ -21740,5 +21765,5 @@
   "generated_by": "compile_all.yml",
   "repository": "Andyy55/ghst",
   "schema_version": 2,
-  "updated_at": "2026-04-23T16:57:37.120428+00:00"
+  "updated_at": "2026-04-25T03:39:11.286648+00:00"
 }
