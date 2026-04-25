@@ -1282,12 +1282,12 @@ ESP_LOGI(TAG, "T-Deck trackball ISRs registered");
 #elif defined(CONFIG_IDF_TARGET_ESP32C5)
   /* Use a single buffer on ESP32-C5 sized to provide a responsive feel on 240x320 displays */
   /* width * 8 gives ~8 lines of buffer which balances responsiveness and RAM use */
+  
   static lv_color_t buf1[CONFIG_TFT_WIDTH * 5] __attribute__((aligned(4)));
 #elif defined(CONFIG_IDF_TARGET_ESP32)
   static lv_color_t buf1[CONFIG_TFT_WIDTH * 10] __attribute__((aligned(4)));
 #else
-  static lv_color_t buf1[CONFIG_TFT_WIDTH * 20] __attribute__((aligned(4)));
-  static lv_color_t buf2[CONFIG_TFT_WIDTH * 20] __attribute__((aligned(4)));
+  static lv_color_t buf1[CONFIG_TFT_WIDTH * 10] __attribute__((aligned(4)));
 #endif
   ESP_LOGI(TAG, "display_manager: draw buffers allocated, free internal RAM: %d bytes", 
            (int)heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
@@ -1316,7 +1316,7 @@ ESP_LOGI(TAG, "T-Deck trackball ISRs registered");
   lv_disp_draw_buf_init(&disp_buf, buf1, NULL, width * 10);
 #else
   /* default: double buffer for smoother drawing */
-  lv_disp_draw_buf_init(&disp_buf, buf1, buf2, width * 5);
+  lv_disp_draw_buf_init(&disp_buf, buf1, NULL, width * 5);
 #endif
 
   /* Initialize the display */
