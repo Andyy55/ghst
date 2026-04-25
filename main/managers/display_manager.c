@@ -1149,6 +1149,18 @@ void apply_power_management_config(bool power_save_enabled) {
 }
 
 void display_manager_init(void) {
+  i2c_config_t conf = {
+      .mode = I2C_MODE_MASTER,
+      .sda_io_num = 8,   // Pin SDA lu
+      .scl_io_num = 9,   // Pin SCL lu
+      .sda_pullup_en = GPIO_PULLUP_ENABLE,
+      .scl_pullup_en = GPIO_PULLUP_ENABLE,
+      .master.clk_speed = 400000, // Fast Mode
+  };
+  i2c_param_config(I2C_NUM_0, &conf);
+  i2c_driver_install(I2C_NUM_0, conf.mode, 0, 0, 0);
+
+  ESP_LOGI(TAG, "I2C Manual Init Done on Pin 8 & 9");
   ESP_LOGI(TAG, "display_manager_init: starting, free internal RAM: %d bytes", 
            (int)heap_caps_get_free_size(MALLOC_CAP_INTERNAL));
 
